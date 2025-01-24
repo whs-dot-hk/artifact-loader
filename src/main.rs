@@ -1,6 +1,8 @@
 mod config;
 mod downloader;
+mod utils;
 
+use crate::utils::set_file_permissions;
 use clap::Parser;
 use futures::future::join_all;
 use std::path::PathBuf;
@@ -24,18 +26,41 @@ async fn main() -> anyhow::Result<()> {
     let config = config::Config::from_file(args.config)?;
 
     // Initialize S3 downloader
-    let downloader = downloader::S3Downloader::new().await?;
+    let downloader = downloader::S3Downloader::new();
 
     // Create download tasks for each artifact
     let download_tasks = config.artifact.iter().map(|(name, artifact)| {
         let downloader = &downloader;
         async move {
             tracing::info!("Downloading artifact: {}", name);
+
+            // Download file
             match downloader
-                .download_file(&artifact.bucket, &artifact.key, &artifact.dest)
+                .download_file(
+                    &artifact.bucket,
+                    &artifact.object_key,
+                    &artifact.dest,
+                    &artifact.hash,
+                )
                 .await
             {
-                Ok(_) => tracing::info!("Successfully downloaded: {}", name),
+                Ok(downloaded) => {
+                    if downloaded {
+                        // Set file permissions after successful download
+                        if let Err(e) = set_file_permissions(
+                            &artifact.dest,
+                            artifact.file_mode,
+                            artifact.file_owner.as_deref(),
+                            artifact.file_group.as_deref(),
+                        )
+                        .await
+                        {
+                            tracing::error!("Failed to set permissions for {}: {}", name, e);
+                            return;
+                        }
+                    }
+                    tracing::info!("Successfully processed: {}", name);
+                }
                 Err(e) => tracing::error!("Failed to download {}: {}", name, e),
             }
         }
