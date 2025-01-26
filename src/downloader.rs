@@ -73,6 +73,16 @@ impl S3Downloader {
         }
         file.flush().await?;
 
+        // Calculate hash after download
+        let downloaded_hash = Self::calculate_hash(dest).await?;
+        if downloaded_hash != expected_hash {
+            return Err(anyhow::anyhow!(
+                "Hash mismatch after download. Expected: {}, Got: {}",
+                expected_hash,
+                downloaded_hash
+            ));
+        }
+
         Ok(true)
     }
 }
