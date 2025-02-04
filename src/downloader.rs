@@ -1,3 +1,4 @@
+use aws_config::Region;
 use aws_sdk_s3::Client;
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -33,6 +34,7 @@ impl S3Downloader {
         key: &str,
         dest: impl AsRef<Path>,
         expected_hash: &str,
+        region: Option<&str>,
     ) -> anyhow::Result<bool> {
         let dest = dest.as_ref();
 
@@ -57,8 +59,15 @@ impl S3Downloader {
             tokio::fs::create_dir_all(parent).await?;
         }
 
-        // Create S3 client
-        let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
+        // Create S3 client with optional region
+        let config = if let Some(region) = region {
+            aws_config::defaults(aws_config::BehaviorVersion::latest())
+                .region(Region::new(region.to_string()))
+                .load()
+                .await
+        } else {
+            aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await
+        };
         let client = Client::new(&config);
 
         // Download the file

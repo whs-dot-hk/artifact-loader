@@ -11,6 +11,8 @@ object_key = "my-key"
 dest = "my-dest"
 # Required: SHA256 hash of the file for verification
 hash = "sha256-hash-here"
+# Optional: AWS region (defaults to the environment's configuration)
+region = "us-west-2"
 # Optional: Set file permissions (as decimal, e.g. 755 for rwxr-xr-x)
 file_mode = 755
 # Optional: Set file owner and group

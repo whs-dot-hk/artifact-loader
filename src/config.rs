@@ -28,6 +28,7 @@ pub struct ArtifactConfig {
     pub file_mode: u32,
     pub file_owner: Option<String>,
     pub file_group: Option<String>,
+    pub region: Option<String>,
 }
 
 fn default_file_mode() -> u32 {

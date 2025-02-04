@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
                     &artifact.object_key,
                     &artifact.dest,
                     &artifact.hash,
+                    artifact.region.as_deref(),
                 )
                 .await
             {
